@@ -4,7 +4,7 @@
 | Liens Importants | -
 | -------- | -------- |
 | [Cahier Des Charges](https://demo.hedgedoc.org/Bt6YOXnDT2aaDt2c9Dgvlg?both#) | <--- | 
-| [Documentation](https://demo.hedgedoc.org/68gCWNdhQoOlSTjoY4sl4Q#Premier-lancement) | <--- |
+| [Document de Conception](https://demo.hedgedoc.org/68gCWNdhQoOlSTjoY4sl4Q#Premier-lancement) | <--- |
 | Auteurs     | Hamri Mathis et Théo Massenya     |
 | Version | 1.0 |
 | Date | 15/03/2024 |
@@ -13,8 +13,8 @@
 Nom: Random, Unidecode 
 prérequis: pip, python
 
+    sudo apt-get install python3.7
     apt install pip
-    
     pip install Unidecode
     pip install random
 

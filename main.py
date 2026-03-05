@@ -1,114 +1,82 @@
-from random import randint
+import random
 from unidecode import unidecode
+import os
 
+# Assurez-vous que le chemin d'accès correspond à l'emplacement de votre fichier de mots.
+os.chdir(r"c:\Users\M8 Sora\Downloads\sutom-main\sutom-main\SUTOM_v1")
 
-def dico():
-    fichier = open("liste_francais.txt", 'r')
-    contenu_du_fichier = fichier.readlines()
-    fichier.close()
+def liste_mots():
+    with open("liste_francais.txt", 'r') as fichier:
+        contenu = fichier.readlines()
+    return [unidecode(mot.strip().lower()) for mot in contenu if len(mot.strip()) <= 6]
 
-
-    l_mots = []
-
-    for mot in contenu_du_fichier:
-        mot = mot.strip().lower()  # Supprimer les espaces et met en minuscules
-        mot = unidecode(mot)  # Enlever les accents
-        if len(mot) <= 6:  # Ajouter le mot uniquement s'il a 6 lettres ou moins
-            l_mots.append(mot)
-
-    return l_mots
-
-
-
-def main():
-    n_try = 6
-    alphabet = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z']
-    contenu_du_fichier = dico()
-    word_rand = word(contenu_du_fichier)
-
-    while n_try != 0:
-        saisie(word_rand, alphabet)
-        n_try -= 1
-    
-    if n_try == 0:
-        print("PERDU !!!")
-    
-
-
-
-def word(contenu_du_fichier):
-    nb = randint(0, len(contenu_du_fichier) - 1)
-    word = contenu_du_fichier[nb]
-    return word
-
-## termninale affichage saisie lance verif
-def saisie(w, a):
-
-    mots = len(w) - 1 #pour gérer le \0 si y en à un
-    l_saisie = []
-    l_play = []
-    l_play.append(w[0])
-    l_saisie.append(w[0])
-
-
-    while mots != 0:
-
-        for i in range(len(a)):
-            print(a[i], " -- ", i)
-
-
-
-        for i in range(len(w) - 1):
-            l_play.append(".")
-
-        print("GRID: ", l_play)
-
-        print(w)
-        for i in range(mots):
-            print(l_saisie)
-            num = int(input("\nséléctionner une lettre: "))
-            l_saisie.append(a[num])
-            mots -= 1
-
-            for i in range(len(a)):
-                print(a[i], " -- ", i)
-            
-
-            
-            print("GRID: ", l_play)
-        
-
-        cor_place = verif(l_saisie, w, a)
-        print(cor_place) # affiche liste element correct placé
-
-            
-
-
-def verif(l, w, a):
-    print("---------")
-    okk = len(w)
-    correct_placement = []
-
-
-    for j in range(len(w)):
-        if l[j] == w[j]:
-            okk -= 1
-            correct_placement.append(l[j])
-            print(f"{w[j]} est présent dans le mot à la bonne place.")
-        elif okk == 0:
-            print("Félicitations ! Vous avez gagné !")
-            exit()  
-        elif l[j] in w:
-            print(f"{l[j]} est présent dans le mot mais mal placé.")
-            correct_placement.append(".")
+def reponse_hypothetique(devinette, mot_secret):
+    reponse = []
+    mot_temp = list(mot_secret)
+    for i, lettre in enumerate(devinette):
+        if lettre == mot_secret[i]:
+            reponse.append('correct')
+            mot_temp[i] = None
+        elif lettre in mot_temp:
+            reponse.append('mal_place')
+            mot_temp[mot_temp.index(lettre)] = None
         else:
-            print(f"{l[j]} n'est pas présent dans le mot.")
-            if l[j] in a:
-                a.remove(l[j])
-                correct_placement.append(".")
-    return correct_placement
+            reponse.append('incorrect')
+    return reponse
 
+def filtre_mots(mots, premiere_lettre, positions_connues, mal_places, lettres_incorrectes, longueur_mot):
+    mots_filtrés = []
+    for mot in mots:
+        if len(mot) != longueur_mot or not mot.startswith(premiere_lettre):
+            continue
+        valide = True
+        for i, char in enumerate(mot):
+            if positions_connues[i]:
+                if positions_connues[i] != char:
+                    valide = False
+                    break
+            elif char in lettres_incorrectes:
+                valide = False
+                break
+            elif char in mal_places and i in mal_places[char]:
+                valide = False
+                break
+        if valide:
+            mots_filtrés.append(mot)
+    return mots_filtrés
 
-main()
+def devine_automatique(mot_secret, max_essais=6):
+    mots = liste_mots()
+    essais = 0
+    positions_connues = [''] * len(mot_secret)
+    positions_connues[0] = mot_secret[0]  # La première lettre est toujours correcte
+    lettres_correctes = set([mot_secret[0]])
+    mal_places = {}
+    lettres_incorrectes = set()
 
-    
+    while essais < max_essais:
+        mots_possibles = filtre_mots(mots, mot_secret[0], positions_connues, mal_places, lettres_incorrectes, len(mot_secret))
+        devinette = random.choice(mots_possibles) if mots_possibles else random.choice([mot for mot in mots if mot.startswith(mot_secret[0]) and len(mot) == len(mot_secret)])
+
+        reponse = reponse_hypothetique(devinette, mot_secret)
+        print(f"Tentative {essais + 1}: {devinette} - Réponse: {reponse}")
+
+        for i, (g, r) in enumerate(zip(devinette, reponse)):
+            if r == 'correct':
+                positions_connues[i] = g
+            elif r == 'mal_place':
+                mal_places[g] = {j for j in range(len(mot_secret)) if j != i}
+            elif r == 'incorrect' and g not in positions_connues:
+                lettres_incorrectes.add(g)
+
+        essais += 1
+        if all(r == 'correct' for r in reponse):
+            print("Mot deviné correctement !")
+            break
+    else:
+        print("Échec à deviner le mot.")
+
+# Exemple d'utilisation
+mot_aleatoire = random.choice([w for w in liste_mots() if len(w) == 5])  # Assure une longueur de mot cohérente
+print("Mot secret:", mot_aleatoire)
+devine_automatique(mot_aleatoire)
